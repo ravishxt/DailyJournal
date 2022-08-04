@@ -1,16 +1,36 @@
 <%- include('partials/header.ejs'); -%>
-
+    <h1 class="mb-4">POSTS</h1>
     <% posts.forEach((post)=> { %>
-        <div class="post">
-            <h1>
-                <%= post.title %>
-            </h1>
-            <p>
-                <%= post.content.substring(0, 100) + "..." %>
-                <a href="/posts/<%=post.title%>">Read More</a>
-            </p>
-        </div>
+        <% if(post.title.length===0) {%>
+            <div class="d-flex flex-column justify-content-center align-items-center text-muted" style="height:600px">
+                <h1 class="no-post">No post available :(</h1>
+                <a href="/compose"><button class="btn btn-primary btn-lg mt-5">Compose</button></a>
+            </div>
+            <% } else { %>
+                <div class="post mb-4">
+                    <div class="mb-2 d-flex align-items-center">
+                        <h2 class="d-inline mb-1">
+                            <%= post.title %>
+                        </h2>
+                        <form action="/edit" method="post" class="d-inline mx-3">
+                            <input type="hidden" name="itemToBeEdited" value=<%=post.id %> >
+                            <button type="submit" class="btn btn-outline-primary btn-sm">
+                                <i class="fa-solid fa-pencil"></i>
+                            </button>
+                        </form>
+                        <form action="/delete" method="post" class="d-inline ">
+                            <input type="hidden" name="itemToBeDeleted" value=<%=post.id %> >
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <p>
+                        <%= post.content.substring(0, 100) + "..." %>
+                            <a href="/posts/<%=post.title%>">Read More</a>
+                    </p>
+                </div>
+                <% } %>
+                    <% }) %>
 
-        <% }) %>
-
-            <%- include('partials/footer.ejs'); -%>
+                        <%- include('partials/footer.ejs'); -%>
