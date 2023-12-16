@@ -1,29 +1,277 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
-
+<!DOCTYPE html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" /> -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              400: "#39BCF8",
+              500: "#0ea5e9",
+              600: "#4C97CA",
+              700: "#0368A0",
+            },
+          },
+        },
+      },
+    };
+  </script>
+  <!-- Dark Mode Toggle Script -->
+  <script>
+    const checkTheme = () => {
+      let toggle = document.getElementById("darkModeToggler");
+      localStorage.setItem("mode");
+      if (localStorage.getItem("mode") == "light") {
+        toggle.setAttribute(
+          "d",
+          "M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
+        );
+      } else {
+        toggle.setAttribute(
+          "d",
+          "M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+        );
+        document.body.classList.toggle("dark");
+      }
+    };
+    const swithTheme = async () => {
+      document.body.classList.toggle("dark");
+      const mode = document.body.classList.contains("dark") ? "dark" : "light";
+      localStorage.setItem("mode", mode);
+
+      let toggle = document.getElementById("darkModeToggler");
+      if ((await localStorage.getItem("mode")) == "dark") {
+        toggle.setAttribute(
+          "d",
+          "M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+        );
+      } else {
+        toggle.setAttribute(
+          "d",
+          "M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
+        );
+      }
+      window.onpaint = swithTheme();
+      // You might want to save the user's preference (mode) in local storage or on the server.
+    };
+  </script>
   <title>Daily Journal</title>
-  <meta charset="utf-8">
-  <!-- CSS only -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
-    <script src="https://kit.fontawesome.com/eda5f23561.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="/css/styles.css">
-  
-  <body>
-  <nav class="navbar navbar-default">
-    <div class="container">
-      <div class="navbar-header">
-        <p class="navbar-brand">DAILY JOURNAL</p>
-      </div>
-      <ul class="nav navbar-nav navbar-right flex-row">
-        <li class="nav-item mx-3" id="home"><a class="nav-link" href="/">HOME</a></li>
-        <li class="nav-item mx-3" id="about"><a class="nav-link" href="/about">ABOUT US</a></li>
-        <li class="nav-item mx-3" id="contact"><a class="nav-link" href="/contact">CONTACT US</a></li>
-        <li class="nav-item mx-3" id="contact"><a class="nav-link" href="/posts">POSTS</a></li>
-        <li class="nav-item mx-3" id="contact"><a class="nav-link" href="/compose">COMPOSE</a></li>
-      </ul>
-    </div>
-  </nav>
-  <div class="container">
+</head>
+<body class="bg-gray-50">
+  <div
+    class="bg-gray-50 text-black antialiased dark:bg-gray-950 dark:text-white vsc-initialized"
+  >
+    <section class="mx-auto max-w-3xl px-4 sm:px-6 xl:max-w-5xl xl:px-0">
+      <div class="flex h-screen flex-col justify-between font-sans">
+        <header class="flex items-center justify-between pt-4 pb-10">
+          <div>
+            <a aria-label="TailwindBlog" href="/"
+              ><div class="flex items-center justify-between">
+                <!-- <div class="mr-3">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    xmlns:xlink="http://www.w3.org/1999/xlink"
+                    width="53.87"
+                    height="43.61"
+                    viewBox="344.564 330.278 111.737 91.218"
+                  >
+                    <defs>
+                      <linearGradient
+                        id="logo_svg__b"
+                        x1="420.97"
+                        x2="420.97"
+                        y1="331.28"
+                        y2="418.5"
+                        gradientUnits="userSpaceOnUse"
+                      >
+                        <stop
+                          offset="0%"
+                          style="stop-color: #06b6d4; stop-opacity: 1"
+                        ></stop>
+                        <stop
+                          offset="100%"
+                          style="stop-color: #67e8f9; stop-opacity: 1"
+                        ></stop>
+                      </linearGradient>
+                      <linearGradient
+                        id="logo_svg__d"
+                        x1="377.89"
+                        x2="377.89"
+                        y1="331.28"
+                        y2="418.5"
+                        gradientUnits="userSpaceOnUse"
+                      >
+                        <stop
+                          offset="0%"
+                          style="stop-color: #06b6d4; stop-opacity: 1"
+                        ></stop>
+                        <stop
+                          offset="100%"
+                          style="stop-color: #67e8f9; stop-opacity: 1"
+                        ></stop>
+                      </linearGradient>
+                      <path
+                        id="logo_svg__a"
+                        d="M453.3 331.28v28.57l-64.66 58.65v-30.08z"
+                      ></path>
+                      <path
+                        id="logo_svg__c"
+                        d="M410.23 331.28v28.57l-64.67 58.65v-30.08z"
+                      ></path>
+                    </defs>
+                    <use
+                      xlink:href="#logo_svg__a"
+                      fill="url(#logo_svg__b)"
+                    ></use>
+                    <use
+                      xlink:href="#logo_svg__c"
+                      fill="url(#logo_svg__d)"
+                    ></use>
+                  </svg>
+                </div> -->
+                <!-- <div class="h-auto pt-2 text-2xl font-semibold sm:inline-block bg-gradient-to-tr from-primary-400 to-primary-500 text-transparent bg-clip-text"> -->
+                <div class="h-6 text-2xl font-semibold sm:block">
+                  Daily Journal
+                </div>
+              </div></a
+            >
+          </div>
+
+          <div class="flex items-center space-x-4 leading-5 sm:space-x-6">
+            <!-- <button aria-label="Toggle Dark Mode">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                class="h-6 w-6 text-gray-900 dark:text-gray-100"
+                onclick="swithTheme()"
+              >
+                <path
+                  id="darkModeToggler"
+                  d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
+                ></path>
+              </svg>
+            </button> -->
+            <a
+              class="hidden font-medium text-gray-900 dark:text-gray-100 sm:block hover:text-primary-700"
+              href="/"
+              >Home</a
+            >
+            <% if (isLoggedIn) {%>
+            <a
+              class="hidden font-medium text-gray-900 dark:text-gray-100 sm:block hover:text-primary-700"
+              href="/entries"
+              >Entries</a
+            >
+            <a
+              class="hidden font-medium text-gray-900 dark:text-gray-100 sm:block hover:text-primary-700"
+              href="/write"
+              >Write</a
+            >
+            <!-- ################# User profile dropdown menu ######################## -->
+            <button
+              id="dropdownAvatarNameButton"
+              data-dropdown-toggle="dropdownAvatarName"
+              class="flex items-center text-sm pe-1 font-medium text-gray-900 rounded-full hover:text-primary-700 dark:hover:text-blue-500 md:me-0 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:text-white"
+              type="button"
+            >
+              <span class="sr-only">Open user menu</span>
+              <img
+                class="h-12 w-12"
+                src=<%= avatar %>
+                alt="avatar"
+              />
+              <%= username %>
+              <svg
+                class="w-2.5 h-2.5 ms-3"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 10 6"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="m1 1 4 4 4-4"
+                />
+              </svg>              
+            </button>
+
+            <!-- Dropdown menu -->
+            <div
+              id="dropdownAvatarName"
+              class="z-10 text-center hidden bg-white divide-y md:divide-y-0 divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700 dark:divide-gray-600"
+            >
+              <!-- <div class="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                            <div class="font-medium">Pro User</div>
+                            <div class="truncate">name@flowbite.com</div>
+                          </div> -->
+              <ul
+                class="sm:hidden py-2 text-sm text-gray-700 dark:text-gray-20"
+                aria-labelledby="dropdownInformdropdownAvatarNameButtonationButton"
+              >
+                <li>
+                  <a
+                    href="/"
+                    class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                    >Home</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="/entries"
+                    class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                    >Entries</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="/write"
+                    class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                    >Write</a
+                  >
+                </li>
+              </ul>
+              <div
+                class="py-2 hover:bg-gray-100 dark:hover:bg-gray-600 hover:rounded-lg"
+              >
+                <a
+                  href="/logout"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
+                  >Sign out</a
+                >
+              </div>
+            </div>
+            <%} else {%>
+            <a
+              class="hidden font-medium text-gray-900 dark:text-gray-100 sm:block hover:text-primary-700"
+              href="/login"
+              >Sign in</a
+            >
+            <%}%>
+            <!-- <button aria-label="Search">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="h-6 w-6 text-gray-900 dark:text-gray-100"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                ></path>
+              </svg></button
+            > -->
+          </div>
+        </header>
