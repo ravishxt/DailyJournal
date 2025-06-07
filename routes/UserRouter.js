@@ -1,34 +1,34 @@
-const express = require("express");
-// const passport = require("../auth/auth")
+const express = require('express');
 const router = express.Router();
-const {
-  handleGetAllEntries,
-  handleHomePage,
-  // handleAboutPage,
-  // handleContactPage,
-  handleGetEntryByTitle,
-  handleWritePage,
-  handleWriteAnEntry,
-  handleDeleteEntry,
-  handleEntryEdit,
-  handleLoginPage,
-  handleRegistraion,
-  handleLogin,
-  handleLogout
-} = require("../controllers/user");
+const { authenticateToken } = require('../middleware/auth');
+const UserController = require('../controllers/userController');
+const { validate } = require('../middleware/validate');
+const { body, param } = require('express-validator');
 
-let auth_status = false;
+// Validation rules
+const entryValidation = [
+  body('title').trim().notEmpty().withMessage('Title is required'),
+  body('content').trim().notEmpty().withMessage('Content is required')
+];
 
-router.route("/").get(handleHomePage);
-// router.route("/about").get(handleAboutPage);
-// router.route("/contact").get(handleContactPage);
-router.route("/entries").get(handleGetAllEntries);
-router.route("/entries/:title").get(handleGetEntryByTitle);
-router.route("/write").get(handleWritePage).post(handleWriteAnEntry);
-router.route("/delete").post(handleDeleteEntry);
-router.route("/edit").post(handleEntryEdit);
-router.route("/register").get(handleRegistraion).post(handleRegistraion);
-router.route("/login").get(handleLoginPage).post(handleLogin);
-router.route("/logout").get(handleLogout)
+const entryIdValidation = [
+  param('id').isMongoId().withMessage('Invalid entry ID')
+];
+
+// Protected routes (require authentication)
+router.use(authenticateToken);
+
+// Entry routes
+router.route('/entries')
+  .get(UserController.getAllEntries)          // Get all entries
+  .post(entryValidation, validate, UserController.createEntry);  // Create new entry
+
+router.route('/entries/:id')
+  .get(entryIdValidation, validate, UserController.getEntry)     // Get single entry
+  .put([...entryIdValidation, ...entryValidation], validate, UserController.updateEntry)  // Update entry
+  .delete(entryIdValidation, validate, UserController.deleteEntry);  // Delete entry
+
+// Search entries
+router.get('/search', UserController.searchEntries);
 
 module.exports = router;

@@ -1,40 +1,80 @@
 //jshint esversion:6
 
-const express = require("express");
-const session = require("express-session");
-const bodyParser = require("body-parser");
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const morgan = require('morgan');
+const { connectMongoDB } = require('./DB/connect');
 
-const router = require("./routes/UserRouter.js")
+// Import routes
+const authRoutes = require('./routes/authRoutes');
+const { errorHandler, notFound } = require('./middleware/errorHandler');
+const bodyParser = require('body-parser');
+const UserRouter = require('./routes/UserRouter');
 
-const {connectMongoDB} = require("./DB/connect.js");
-
-const ejs = require("ejs");
-
-
-const PORT = process.env.PORT || 3000;
-
+// Initialize express app
 const app = express();
 
-app.set('view engine', 'ejs');
+// Connect to MongoDB
+connectMongoDB(process.env.MONGO_URI);
 
-app.use(session({
-  secret: 'secret-key',
-  resave: false,
-  saveUninitialized: false,
-}));
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Logging in development
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// CORS configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg =
+          'The CORS policy for this site does not allow access from the specified Origin.';
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
+    credentials: true, // Allow credentials (cookies, authorization headers)
+    exposedHeaders: ['set-cookie'], // Expose cookies to the client
+  })
+);
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/user', UserRouter)
+
+// Test route
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'success',
+    message: 'API is running',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Error handling middleware
+app.use(notFound);
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 3001;
 app.use(express.static(__dirname + '/public'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-// app.use(express.static("public"));
 app.use(express.static(__dirname + '/public'));
-app.use(router)
-
-// app.post("/login", (req, res) => {
-//   console.log(req.body.title)
-//   res.send("OK")
-// })
-
-connectMongoDB("mongodb+srv://admin-slinger:sj9alcbpxbxLJ1gL@cluster0.zy1ey.mongodb.net/JournalDB?retryWrites=true&w=majority")
 
 app.listen(PORT, function () {
   console.log(`Server has started on port ${PORT}`);
