@@ -20,7 +20,12 @@ class UserController {
         userId: item.userId
       }));
 
-      res.json(entries);
+      res.json({
+        success: true,
+        data: {
+          entries
+        }
+      });
     } catch (error) {
       next(new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to fetch entries'));
     }

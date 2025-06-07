@@ -43,7 +43,10 @@ exports.errorHandler = (err, req, res, next) => {
   // Default to 500 server error
   res.status(error.statusCode || 500).json({
     success: false,
-    error: error.message || 'Server Error'
+    error: {
+      message: error.message || 'Server Error',
+      code: error.code || 500,
+    }
   });
 };
 
