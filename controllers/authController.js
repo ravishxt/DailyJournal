@@ -1,7 +1,13 @@
 const User = require('../models/User');
 const TokenService = require('../services/tokenService');
-const { generateTokens } = require('../auth/jwt');
+const { 
+  generateTokens, 
+  verifyRefreshToken,
+  ACCESS_TOKEN_EXPIRY,
+  REFRESH_TOKEN_EXPIRY 
+} = require('../auth/jwt');
 const ApiError = require('../utils/apiError');
+const logger = require('../utils/logger');
 
 class AuthController {
   // User registration
@@ -36,16 +42,13 @@ class AuthController {
       );
 
       // Return user data and tokens
-      res.status(201).json({
-        success: true,
-        data: {
-          user: user.getPublicProfile(),
-          tokens: {
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken
-          }
+      return res.api.created({
+        user: user.getPublicProfile(),
+        tokens: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken
         }
-      });
+      }, 'Registration successful');
     } catch (error) {
       next(error);
     }
@@ -64,16 +67,16 @@ class AuthController {
       const user = await User.findOne({ email }).select('+password');
       
       if (!user) {
-        console.log(`Login attempt failed: No user found with email ${email}`);
+        logger.error(`Login attempt failed: No user found with email ${email}`);
         throw new ApiError(401, 'Invalid email or password');
       }
       
       // Compare passwords
       const isMatch = await user.comparePassword(password);
-      console.log(`Password match for user ${user._id}:`, isMatch);
+      logger.info(`Password match for user ${user._id}:`, isMatch);
       
       if (!isMatch) {
-        console.log(`Login attempt failed: Incorrect password for user ${user._id}`);
+        logger.error(`Login attempt failed: Incorrect password for user ${user._id}`);
         throw new ApiError(401, 'Invalid email or password');
       }
 
@@ -89,16 +92,13 @@ class AuthController {
       await user.save();
 
       // Return user data and tokens
-      res.json({
-        success: true,
-        data: {
-          user: user.getPublicProfile(),
-          tokens: {
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken
-          }
+      return res.api.success({
+        user: user.getPublicProfile(),
+        tokens: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken
         }
-      });
+      }, 'Login successful');
     } catch (error) {
       next(error);
     }
@@ -108,23 +108,54 @@ class AuthController {
   static async refreshToken(req, res, next) {
     try {
       const { refreshToken } = req.body;
-
+      
       if (!refreshToken) {
         throw new ApiError(400, 'Refresh token is required');
       }
 
-      const tokens = await TokenService.refreshAccessToken(
-        refreshToken,
+      // Verify the refresh token
+      const decoded = verifyRefreshToken(refreshToken);
+      
+      // Find the token in the database and check if it's valid
+      const tokenDoc = await TokenService.findToken(refreshToken);
+      if (!tokenDoc || tokenDoc.isRevoked) {
+        throw new ApiError(401, 'Invalid or expired refresh token');
+      }
+
+      // Get the user
+      const user = await User.findById(decoded.userId);
+      if (!user) {
+        logger.error(`Refresh token attempt failed: User not found for ID ${decoded.userId}`);
+        throw new ApiError(404, 'User not found');
+      }
+
+      // Generate new tokens
+      const tokens = await TokenService.generateAndStoreTokens(
+        user,
         req.get('user-agent') || '',
         req.ip
       );
 
-      res.json({
-        success: true,
-        data: tokens
-      });
+      // Invalidate the old refresh token
+      await TokenService.invalidateToken(refreshToken);
+
+      // Return the new tokens
+      return res.api.success({
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: 15 * 60 // 15 minutes in seconds
+      }, 'Token refreshed successfully');
     } catch (error) {
-      next(error);
+      logger.error('Token refresh failed:', error);
+      
+      // Handle specific JWT errors
+      if (error.name === 'TokenExpiredError') {
+        return next(new ApiError(401, 'Refresh token has expired'));
+      } else if (error.name === 'JsonWebTokenError') {
+        return next(new ApiError(401, 'Invalid refresh token'));
+      }
+      
+      next(new ApiError(401, error.message));
     }
   }
 
@@ -132,17 +163,13 @@ class AuthController {
   static async logout(req, res, next) {
     try {
       const { refreshToken } = req.body;
-      
       if (!refreshToken) {
-        throw new ApiError(400, 'Refresh token is required');
+        return res.api.badRequest('Refresh token is required');
       }
 
       await TokenService.revokeToken(refreshToken);
       
-      res.json({
-        success: true,
-        message: 'Successfully logged out'
-      });
+      return res.api.success(null, 'Successfully logged out');
     } catch (error) {
       next(error);
     }
@@ -151,17 +178,16 @@ class AuthController {
   // Get current user profile
   static async getMe(req, res, next) {
     try {
-      const user = await User.findById(req.user.userId);
+      const user = await User.findById(req.user.userId).select('-password');
       
       if (!user) {
-        throw new ApiError(404, 'User not found');
+        logger.error(`User not found for ID ${req.user.userId}`);
+        return res.api.notFound('User not found');
       }
 
-      res.json({
-        success: true,
-        data: user.getPublicProfile()
-      });
+      return res.api.success(user.getPublicProfile());
     } catch (error) {
+      logger.error('Error fetching user profile:', error);
       next(error);
     }
   }

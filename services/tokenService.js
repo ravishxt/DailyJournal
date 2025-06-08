@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken');
 const Token = require('../models/Token');
 const ApiError = require('../utils/apiError');
 const ms = require('ms');
+const { logger } = require('../utils/logger');
+const { generateTokens } = require('../auth/jwt');
 
 class TokenService {
   // Generate access and refresh tokens
@@ -57,16 +59,62 @@ class TokenService {
     }
   }
 
+  // Verify refresh token
+  static async verifyRefreshToken(token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+      
+      // Check if token is in the database and not revoked
+      const tokenDoc = await Token.findOne({ 
+        refreshToken: token, 
+        isRevoked: false,
+        expiresAt: { $gt: new Date() }
+      });
+
+      if (!tokenDoc) {
+        throw new Error('Invalid or expired refresh token');
+      }
+
+      return decoded;
+    } catch (error) {
+      logger.error('Token verification failed:', error);
+      throw new Error('Invalid refresh token');
+    }
+  }
+
+  // Find token in database
+  static async findToken(token) {
+    return Token.findOne({
+      refreshToken: token,
+      isRevoked: false,
+      expiresAt: { $gt: new Date() }
+    });
+  }
+
+  // Invalidate a token
+  static async invalidateToken(token) {
+    return Token.findOneAndUpdate(
+      { refreshToken: token },
+      { 
+        isRevoked: true, 
+        revokedAt: new Date() 
+      },
+      { new: true }
+    );
+  }
+
   // Generate and store tokens
   static async generateAndStoreTokens(user, userAgent, ipAddress) {
-    try {
-      const tokens = this.generateTokens(user);
-      await this.storeRefreshToken(user._id, tokens.refreshToken, userAgent, ipAddress);
-      return tokens;
-    } catch (error) {
-      console.error('Error in generateAndStoreTokens:', error);
-      throw error;
-    }
+    const tokens = generateTokens(user);
+    
+    await this.storeRefreshToken(
+      user._id,
+      tokens.refreshToken,
+      userAgent,
+      ipAddress
+    );
+    
+    return tokens;
   }
 
   // Refresh access token using refresh token
@@ -76,8 +124,8 @@ class TokenService {
         throw new ApiError(400, 'Refresh token is required');
       }
 
-      // Verify the refresh token
-      const decoded = this.verifyRefreshToken(refreshToken);
+      // Verify refresh token
+      const decoded = await this.verifyRefreshToken(refreshToken);
       
       // Check if the token exists and is not revoked
       const existingToken = await Token.findOne({

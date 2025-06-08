@@ -19,11 +19,11 @@ const entryIdValidation = [
 router.use(authenticateToken);
 
 // Entry routes
-router.route('/entries')
+router.route('/')
   .get(UserController.getAllEntries)          // Get all entries
   .post(entryValidation, validate, UserController.createEntry);  // Create new entry
 
-router.route('/entries/:id')
+router.route('/:id')
   .get(entryIdValidation, validate, UserController.getEntry)     // Get single entry
   .put([...entryIdValidation, ...entryValidation], validate, UserController.updateEntry)  // Update entry
   .delete(entryIdValidation, validate, UserController.deleteEntry);  // Delete entry

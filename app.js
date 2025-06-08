@@ -7,9 +7,10 @@ const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const { connectMongoDB } = require('./DB/connect');
 
-// Import routes
+// Import routes and middlewares
 const authRoutes = require('./routes/authRoutes');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
+const responseHandler = require('./utils/responseHandler');
 const bodyParser = require('body-parser');
 const UserRouter = require('./routes/UserRouter');
 
@@ -18,11 +19,6 @@ const app = express();
 
 // Connect to MongoDB
 connectMongoDB(process.env.MONGO_URI);
-
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 
 // Logging in development
 if (process.env.NODE_ENV === 'development') {
@@ -33,6 +29,9 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Add response handler middleware
+app.use(responseHandler);
 
 // CORS configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
@@ -55,7 +54,7 @@ app.use(
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/user', UserRouter)
+app.use('/api/entries', UserRouter)
 
 // Test route
 app.get('/api/health', (req, res) => {

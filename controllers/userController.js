@@ -1,6 +1,7 @@
 const Entry = require('../models/Entry');
 const ApiError = require('../utils/apiError');
 const httpStatus = require('http-status-codes');
+const { validationResult } = require('express-validator');
 
 class UserController {
   /**
@@ -8,7 +9,19 @@ class UserController {
    */
   async getAllEntries(req, res, next) {
     try {
-      const foundEntries = await Entry.find({ userId: req.user.userId });
+      // Default pagination values
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+
+      // Get total count of entries
+      const totalEntries = await Entry.countDocuments({ userId: req.user.userId });
+      
+      // Get paginated entries
+      const foundEntries = await Entry.find({ userId: req.user.userId })
+        .sort({ createdAt: -1 }) // Sort by most recent first
+        .skip(skip)
+        .limit(limit);
       
       const entries = foundEntries.map((item) => ({
         id: item._id,
@@ -20,10 +33,20 @@ class UserController {
         userId: item.userId
       }));
 
-      res.json({
-        success: true,
-        data: {
-          entries
+      // Calculate pagination metadata
+      const totalPages = Math.ceil(totalEntries / limit);
+      const hasNextPage = page < totalPages;
+      const hasPreviousPage = page > 1;
+
+      return res.api.success({ 
+        entries,
+        pagination: {
+          total: totalEntries,
+          totalPages,
+          currentPage: page,
+          hasNextPage,
+          hasPreviousPage,
+          limit
         }
       });
     } catch (error) {
@@ -39,10 +62,10 @@ class UserController {
       const entry = await Entry.findOne({ _id: req.params.id, userId: req.user.userId });
       
       if (!entry) {
-        return next(new ApiError(httpStatus.NOT_FOUND, 'Entry not found'));
+        return res.api.notFound('Entry not found');
       }
 
-      res.json({
+      const entryData = {
         id: entry._id,
         title: entry.title,
         content: entry.body,
@@ -50,7 +73,9 @@ class UserController {
         createdAt: entry.createdAt,
         updatedAt: entry.updatedAt,
         userId: entry.userId
-      });
+      };
+
+      return res.api.success(entryData);
     } catch (error) {
       next(new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to fetch entry'));
     }
@@ -62,6 +87,11 @@ class UserController {
    */
   async createEntry(req, res, next) {
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.api.validationError(errors.array());
+      }
+
       const { title, content } = req.body;
       
       const newEntry = new Entry({
@@ -73,7 +103,7 @@ class UserController {
 
       await newEntry.save();
 
-      res.status(httpStatus.CREATED).json({
+      const entryData = {
         id: newEntry._id,
         title: newEntry.title,
         content: newEntry.body,
@@ -81,8 +111,13 @@ class UserController {
         createdAt: newEntry.createdAt,
         updatedAt: newEntry.updatedAt,
         userId: newEntry.userId
-      });
+      };
+
+      return res.api.created(entryData, 'Entry created successfully');
     } catch (error) {
+      if (error.name === 'ValidationError') {
+        return res.api.badRequest(error.message);
+      }
       next(new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to create entry'));
     }
   }
@@ -92,6 +127,11 @@ class UserController {
    */
   async updateEntry(req, res, next) {
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.api.validationError(errors.array());
+      }
+
       const { title, content } = req.body;
       
       const updatedEntry = await Entry.findOneAndUpdate(
@@ -101,17 +141,19 @@ class UserController {
       );
 
       if (!updatedEntry) {
-        return next(new ApiError(httpStatus.NOT_FOUND, 'Entry not found'));
+        return res.api.notFound('Entry not found or you do not have permission to update it');
       }
 
-      res.json({
+      const entryData = {
         id: updatedEntry._id,
         title: updatedEntry.title,
         content: updatedEntry.body,
         date: updatedEntry.createdAt,
         updatedAt: updatedEntry.updatedAt,
         userId: updatedEntry.userId
-      });
+      };
+
+      return res.api.success(entryData, 'Entry updated successfully');
     } catch (error) {
       next(new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to update entry'));
     }
@@ -128,10 +170,10 @@ class UserController {
       });
 
       if (!entry) {
-        return next(new ApiError(httpStatus.NOT_FOUND, 'Entry not found'));
+        return next(new ApiError(httpStatus.NOT_FOUND, 'Entry not found or you do not have permission to delete it'));
       }
 
-      res.status(httpStatus.NO_CONTENT).send();
+      return res.api.success('Entry deleted successfully');
     } catch (error) {
       next(new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to delete entry'));
     }

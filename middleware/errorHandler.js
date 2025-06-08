@@ -2,57 +2,116 @@ const ApiError = require('../utils/apiError');
 
 // Error handling middleware
 exports.errorHandler = (err, req, res, next) => {
-  let error = { ...err };
-  error.message = err.message;
-
   // Log error for development
   console.error(`Error: ${err.message}`.red);
-  console.error(err.stack);
+  console.error("error", err, "stack", err.stack);
 
   // Handle specific error types
   if (err.name === 'CastError') {
     const message = `Resource not found with id of ${err.value}`;
-    error = new ApiError(404, message);
+    return res.status(404).json({
+      success: false,
+      message,
+      error: {
+        message,
+        statusCode: 404
+      }
+    });
   }
 
   // Handle validation errors
   if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map(val => val.message);
-    error = new ApiError(400, message);
+    const errors = Object.values(err.errors).map(val => ({
+      field: val.path,
+      message: val.message
+    }));
+    return res.status(422).json({
+      success: false,
+      message: 'Validation Error',
+      error: {
+        message: 'Validation Error',
+        details: errors,
+        statusCode: 422
+      }
+    });
   }
 
   // Handle duplicate field value
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue)[0];
     const message = `Duplicate field value: ${field}. Please use another value.`;
-    error = new ApiError(400, message);
+    return res.status(409).json({
+      success: false,
+      message,
+      error: {
+        message,
+        statusCode: 409
+      }
+    });
   }
 
   // Handle JWT errors
   if (err.name === 'JsonWebTokenError') {
     const message = 'Invalid token';
-    error = new ApiError(401, message);
+    return res.status(401).json({
+      success: false,
+      message,
+      error: {
+        message,
+        statusCode: 401
+      }
+    });
   }
 
   // Handle JWT expired error
   if (err.name === 'TokenExpiredError') {
     const message = 'Token has expired';
-    error = new ApiError(401, message);
+    return res.status(401).json({
+      success: false,
+      message,
+      error: {
+        message,
+        statusCode: 401
+      }
+    });
+  }
+
+  // Handle ApiError instances
+  if (err instanceof ApiError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+      error: {
+        message: err.message,
+        ...(err.errors && { details: err.stack.errors || err.errors }),
+        statusCode: err.statusCode
+      }
+    });
   }
 
   // Default to 500 server error
-  res.status(error.statusCode || 500).json({
+  console.error('Unhandled error:', err);
+  res.status(500).json({
     success: false,
+    message: 'Internal Server Error',
     error: {
-      message: error.message || 'Server Error',
-      code: error.code || 500,
+      message: 'An unexpected error occurred',
+      statusCode: 500
     }
   });
 };
 
 // 404 Not Found handler
 exports.notFound = (req, res, next) => {
-  next(new ApiError(404, `Not Found - ${req.originalUrl}`));
+  const message = `The requested resource ${req.originalUrl} was not found`;
+  res.status(404).json({
+    success: false,
+    message,
+    error: {
+      message,
+      statusCode: 404
+    }
+  });
 };
 
 // Handle unhandled promise rejections

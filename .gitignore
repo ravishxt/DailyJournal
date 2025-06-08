@@ -1,4 +1,54 @@
-/node_modules
-npm-debug.log
+# === Node ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log
+
+# === Build Output ===
+dist/
+build/
+.next/
+out/
+coverage/
+
+# === Env files ===
+.env
+.env.*.local
+
+# === Logs ===
+logs/
+*.log
+
+# === IDEs & System Files ===
+.vscode/
+.idea/
 .DS_Store
-/*.env
+Thumbs.db
+
+# === Optional: OS-specific ===
+# macOS
+*.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# === Frontend Cache ===
+.cache/
+.cache-loader/
+.happypack/
+
+# === Others ===
+*.local
+*.sublime-project
+*.sublime-workspace
+*.swp
+
+# === Firebase / Supabase / Other Services ===
+.firebase/
+.supabase/

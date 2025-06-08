@@ -10,6 +10,7 @@ class ApiError extends Error {
     this.isOperational = isOperational;
     this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
     this.timestamp = new Date().toISOString();
+    this.errors = message;
     
     if (stack) {
       this.stack = stack;
